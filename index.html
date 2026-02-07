@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pixel Rose 🌹</title>
+  <style>
+    :root { --bg: #000; --text: #ff6b93; }
+
+    body{
+      margin:0;
+      height:100vh;
+      display:grid;
+      place-items:center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .wrap{ text-align:center; }
+
+    canvas{
+      /* IMPORTANT: keeps it crisp/pixelated */
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: #000;
+      border-radius: 14px;
+    }
+
+    .msg{
+      margin-top: 14px;
+      font-size: 18px;
+      letter-spacing: .3px;
+      opacity: .9;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="cv" width="512" height="512"></canvas>
+    <div class="msg">For you, in every pixel 🌹</div>
+  </div>
+
+  <script>
+    // Put your image in the same folder and name it "rose.png"
+    const IMAGE_SRC = "rose.png";
+
+    const canvas = document.getElementById("cv");
+    const ctx = canvas.getContext("2d");
+
+    // Controls how "pixelated" it looks:
+    // smaller number = chunkier pixels, larger number = smoother
+    const PIXEL_SCALE = 6; // try 4, 6, 8, 10
+
+    const img = new Image();
+    img.src = IMAGE_SRC;
+
+    img.onload = () => {
+      const W = canvas.width;
+      const H = canvas.height;
+
+      // Fill black background
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, W, H);
+
+      // Turn off smoothing so scaling stays pixelated
+      ctx.imageSmoothingEnabled = false;
+
+      // Draw the image small first, then scale it up (pixelation effect)
+      const smallW = Math.floor(W / PIXEL_SCALE);
+      const smallH = Math.floor(H / PIXEL_SCALE);
+
+      // Offscreen canvas for downscaling
+      const off = document.createElement("canvas");
+      off.width = smallW;
+      off.height = smallH;
+      const offCtx = off.getContext("2d");
+      offCtx.imageSmoothingEnabled = true; // smoother downscale into pixels
+
+      // Keep aspect ratio of your rose image
+      const imgAR = img.width / img.height;
+      let drawW = smallW, drawH = smallH;
+      if (drawW / drawH > imgAR) drawW = Math.floor(drawH * imgAR);
+      else drawH = Math.floor(drawW / imgAR);
+
+      const dx = Math.floor((smallW - drawW) / 2);
+      const dy = Math.floor((smallH - drawH) / 2);
+
+      // Draw onto offscreen (small) canvas
+      offCtx.clearRect(0, 0, smallW, smallH);
+      offCtx.drawImage(img, dx, dy, drawW, drawH);
+
+      // Draw scaled-up onto main canvas (pixelated)
+      ctx.drawImage(off, 0, 0, smallW, smallH, 0, 0, W, H);
+    };
+
+    img.onerror = () => {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ff6b93";
+      ctx.font = "16px monospace";
+      ctx.fillText("Couldn't load rose.png", 20, 40);
+      ctx.fillText("Put the image in the same folder as this HTML.", 20, 65);
+    };
+  </script>
+</body>
+</html>
