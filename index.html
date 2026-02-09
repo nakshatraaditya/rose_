@@ -1,312 +1,340 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>8-Bit Garden</title>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: #000;
-      overflow: hidden;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Will You Be My Valentine?</title>
+    <style>
+        /* --- RESET & BASIC SETUP --- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden; /* Prevents scrollbars */
+            font-family: 'Courier New', Courier, monospace; /* Retro font */
+        }
 
-    /* Keep your canvas as the background */
-    canvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      display: block;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-    }
+        /* --- BACKGROUND CANVAS --- */
+        canvas#garden {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1; /* Behind everything */
+            display: block;
+        }
 
-    /* Foreground overlay UI */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 20px;
-    }
+        /* --- OVERLAY CONTAINER --- */
+        .overlay {
+            position: relative;
+            z-index: 10; /* Above the canvas */
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Let clicks pass through to canvas if not on card */
+        }
 
-    .reference-img {
-      max-width: 240px;
-      width: 70%;
-      height: auto;
-      object-fit: contain;
-      border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      user-select: none;
-      -webkit-user-drag: none;
-    }
+        /* --- THE CARD --- */
+        .card {
+            background-color: #fdf5e6; /* Cream / Old Lace */
+            border: 4px solid #4a3b32; /* Dark pixel-art brown border */
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            pointer-events: auto; /* Re-enable clicks for the card */
+            
+            /* Initial Animation */
+            opacity: 0;
+            transform: translateY(20px);
+            animation: popIn 0.8s ease-out forwards 0.5s;
+        }
 
-    .card {
-      background: #f5f1e8;
-      color: #111;
-      padding: 18px 22px;
-      border-radius: 14px;
-      text-align: center;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
-      max-width: 360px;
-      width: min(92vw, 360px);
-    }
+        @keyframes popIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .question {
-      font-size: 18px;
-      margin: 0 0 12px;
-      font-weight: 600;
-    }
+        /* --- CHARACTER IMAGE --- */
+        .character-img {
+            width: 200px; /* Adjust size as needed */
+            height: auto;
+            image-rendering: pixelated; /* Keeps pixel art crisp */
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
 
-    .buttons {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      align-items: center;
-    }
+        h1 {
+            color: #4a3b32;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+        }
 
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 10px 16px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: transform 0.15s ease, opacity 0.25s ease;
-    }
+        /* --- BUTTONS --- */
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            position: relative; /* Needed for button positioning context */
+        }
 
-    button:active {
-      transform: scale(0.98);
-    }
+        button {
+            font-family: inherit;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 10px 30px;
+            border: 3px solid #000;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
 
-    #yesBtn {
-      background: #111;
-      color: #f5f1e8;
-    }
+        button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+        }
 
-    #noBtn {
-      background: #ddd6c8;
-      color: #111;
-      position: relative; /* will become fixed when escaping */
-    }
+        .btn-yes {
+            background-color: #ff6b81;
+            color: white;
+            border-color: #c44559;
+        }
 
-    .message {
-      margin-top: 12px;
-      font-size: 15px;
-      display: none;
-    }
-  </style>
+        .btn-no {
+            background-color: #bdc3c7;
+            color: #2c3e50;
+            border-color: #7f8c8d;
+            position: relative; /* Starts relative, becomes fixed on jump */
+            transition: opacity 0.3s ease;
+        }
+
+        /* --- SUCCESS MESSAGE HIDDEN INITIALLY --- */
+        .success-message {
+            display: none;
+            color: #d63031;
+        }
+
+    </style>
 </head>
 <body>
-  <canvas id="garden"></canvas>
 
-  <!-- Foreground UI -->
-  <div class="overlay">
-    <img src="reference.png" alt="Reference" class="reference-img" />
+    <canvas id="garden"></canvas>
 
-    <div class="card">
-      <p class="question">Will you be my Valentine?</p>
+    <div class="overlay">
+        <div class="card" id="mainCard">
+            <img src="character.png" alt="Character" class="character-img">
+            
+            <h1 id="question">Will you be my Valentine?</h1>
 
-      <div class="buttons">
-        <button id="yesBtn">Yes</button>
-        <button id="noBtn">No</button>
-      </div>
+            <div class="btn-container">
+                <button class="btn-yes" id="yesBtn">Yes</button>
+                <button class="btn-no" id="noBtn">No</button>
+            </div>
 
-      <div class="message" id="msg">Yay! 💐</div>
+            <div class="success-message" id="successMsg">
+                <h2>YAY! ❤️</h2>
+                <p>See you on the 14th!</p>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <script>
-    // ====== YOUR ROSE CANVAS CODE (UNCHANGED) ======
-    const canvas = document.getElementById('garden');
-    const ctx = canvas.getContext('2d');
+    <script>
+        /* =========================================
+           PART 1: THE ROSE GARDEN (Background)
+           ========================================= */
+        const canvas = document.getElementById('garden');
+        const ctx = canvas.getContext('2d');
 
-    let width, height;
-    let roses = [];
+        let width, height;
+        let roses = [];
+        
+        const PIXEL_SIZE = 4;
+        const GRID_ALIGN = true;
 
-    const PIXEL_SIZE = 4;
-    const GRID_ALIGN = true;
-
-    function resize() {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-      initGarden();
-    }
-
-    window.addEventListener('resize', resize);
-
-    function random(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    class Rose {
-      constructor() { this.init(); }
-
-      init() {
-        this.x = random(width * 0.1, width * 0.9);
-        this.y = random(height * 0.2, height * 0.9);
-
-        const hue = random(330, 360);
-        this.color = `hsl(${hue}, 80%, 50%)`;
-        this.glowColor = `hsl(${hue}, 100%, 70%)`;
-
-        this.phase = random(0, Math.PI * 2);
-        this.speed = random(0.005, 0.015);
-        this.scale = random(2, 4);
-        this.maxBloom = random(0.8, 1.2);
-
-        this.swayOffset = random(0, 100);
-        this.swaySpeed = random(0.001, 0.003);
-      }
-
-      drawPixel(relX, relY, color, alpha) {
-        ctx.fillStyle = color;
-        ctx.globalAlpha = alpha;
-
-        let drawX = this.x + (relX * PIXEL_SIZE * this.scale);
-        let drawY = this.y + (relY * PIXEL_SIZE * this.scale);
-
-        const sway = Math.sin(Date.now() * this.swaySpeed + this.swayOffset) * (20 * this.scale);
-        drawX += sway;
-
-        if (GRID_ALIGN) {
-          drawX = Math.floor(drawX / PIXEL_SIZE) * PIXEL_SIZE;
-          drawY = Math.floor(drawY / PIXEL_SIZE) * PIXEL_SIZE;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initGarden();
         }
 
-        ctx.fillRect(drawX, drawY, PIXEL_SIZE * this.scale, PIXEL_SIZE * this.scale);
-      }
+        window.addEventListener('resize', resize);
 
-      update(time) {
-        const t = time * this.speed + this.phase;
-        const cycle = (Math.sin(t) + 1) / 2;
-        const bloomLevel = Math.min(cycle * 1.5, 1) * this.maxBloom;
-
-        let alpha = 1;
-        let glow = 0;
-
-        if (cycle > 0.8) {
-          glow = (cycle - 0.8) * 100;
-          alpha = 0.8 + Math.sin(time * 0.1) * 0.2;
-        } else if (cycle < 0.2) {
-          alpha = cycle * 5;
+        function random(min, max) {
+            return Math.random() * (max - min) + min;
         }
 
-        this.draw(bloomLevel, alpha, glow);
-      }
+        class Rose {
+            constructor() { this.init(); }
 
-      draw(bloom, alpha, glowLevel) {
-        if (bloom > 0.1) {
-          const stemHeight = 6;
-          for (let i = 1; i < stemHeight; i++) {
-            this.drawPixel(0, i + 2, '#2d6e32', alpha);
-            if (i === 3) {
-              this.drawPixel(-1, i + 2, '#2d6e32', alpha);
-              this.drawPixel(1, i + 3, '#2d6e32', alpha);
+            init() {
+                this.x = random(width * 0.1, width * 0.9);
+                this.y = random(height * 0.2, height * 0.9);
+                const hue = random(330, 360); 
+                this.color = `hsl(${hue}, 80%, 50%)`;
+                this.glowColor = `hsl(${hue}, 100%, 70%)`;
+                this.phase = random(0, Math.PI * 2);
+                this.speed = random(0.005, 0.015);
+                this.scale = random(2, 4);
+                this.maxBloom = random(0.8, 1.2);
+                this.swayOffset = random(0, 100);
+                this.swaySpeed = random(0.001, 0.003);
             }
-          }
+
+            drawPixel(relX, relY, color, alpha) {
+                ctx.fillStyle = color;
+                ctx.globalAlpha = alpha;
+                let drawX = this.x + (relX * PIXEL_SIZE * this.scale);
+                let drawY = this.y + (relY * PIXEL_SIZE * this.scale);
+                const sway = Math.sin(Date.now() * this.swaySpeed + this.swayOffset) * (20 * this.scale);
+                drawX += sway;
+
+                if (GRID_ALIGN) {
+                    drawX = Math.floor(drawX / PIXEL_SIZE) * PIXEL_SIZE;
+                    drawY = Math.floor(drawY / PIXEL_SIZE) * PIXEL_SIZE;
+                }
+                ctx.fillRect(drawX, drawY, PIXEL_SIZE * this.scale, PIXEL_SIZE * this.scale);
+            }
+
+            update(time) {
+                const t = time * this.speed + this.phase;
+                const cycle = (Math.sin(t) + 1) / 2; 
+                const bloomLevel = Math.min(cycle * 1.5, 1) * this.maxBloom; 
+                let alpha = 1;
+                let glow = 0;
+                
+                if (cycle > 0.8) {
+                    glow = (cycle - 0.8) * 100;
+                    alpha = 0.8 + Math.sin(time * 0.1) * 0.2;
+                } else if (cycle < 0.2) {
+                    alpha = cycle * 5; 
+                }
+                this.draw(bloomLevel, alpha, glow);
+            }
+
+            draw(bloom, alpha, glowLevel) {
+                if (bloom > 0.1) {
+                    const stemHeight = 6;
+                    for (let i = 1; i < stemHeight; i++) {
+                        this.drawPixel(0, i + 2, '#2d6e32', alpha); 
+                        if (i === 3) {
+                             this.drawPixel(-1, i + 2, '#2d6e32', alpha);
+                             this.drawPixel(1, i + 3, '#2d6e32', alpha);
+                        }
+                    }
+                }
+                if (bloom > 0.2) this.drawPixel(0, 0, '#601120', alpha);
+                if (bloom > 0.3) this.drawPixel(0, 1, '#601120', alpha);
+                if (bloom > 0.5) {
+                    this.drawPixel(-1, 0, this.color, alpha);
+                    this.drawPixel(1, 0, this.color, alpha);
+                    this.drawPixel(0, -1, this.color, alpha);
+                }
+                if (bloom > 0.8) {
+                    this.drawPixel(-1, -1, this.color, alpha);
+                    this.drawPixel(1, -1, this.color, alpha);
+                    this.drawPixel(-1, 1, this.color, alpha);
+                    this.drawPixel(1, 1, this.color, alpha);
+                    this.drawPixel(-2, 0, this.color, alpha);
+                    this.drawPixel(2, 0, this.color, alpha);
+                }
+                if (glowLevel > 0) {
+                    ctx.shadowBlur = glowLevel;
+                    ctx.shadowColor = this.glowColor;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+            }
         }
 
-        if (bloom > 0.2) this.drawPixel(0, 0, '#601120', alpha);
-        if (bloom > 0.3) this.drawPixel(0, 1, '#601120', alpha);
-
-        if (bloom > 0.5) {
-          this.drawPixel(-1, 0, this.color, alpha);
-          this.drawPixel(1, 0, this.color, alpha);
-          this.drawPixel(0, -1, this.color, alpha);
+        function initGarden() {
+            roses = [];
+            const count = Math.floor((width * height) / 40000);
+            for (let i = 0; i < count; i++) roses.push(new Rose());
         }
 
-        if (bloom > 0.8) {
-          this.drawPixel(-1, -1, this.color, alpha);
-          this.drawPixel(1, -1, this.color, alpha);
-          this.drawPixel(-1, 1, this.color, alpha);
-          this.drawPixel(1, 1, this.color, alpha);
-          this.drawPixel(-2, 0, this.color, alpha);
-          this.drawPixel(2, 0, this.color, alpha);
+        function animate() {
+            ctx.fillStyle = '#000';
+            ctx.shadowBlur = 0;
+            ctx.fillRect(0, 0, width, height);
+            const time = Date.now() * 0.001;
+            roses.forEach(rose => rose.update(time));
+            requestAnimationFrame(animate);
         }
 
-        if (glowLevel > 0) {
-          ctx.shadowBlur = glowLevel;
-          ctx.shadowColor = this.glowColor;
-        } else {
-          ctx.shadowBlur = 0;
+        resize();
+        animate();
+
+
+        /* =========================================
+           PART 2: INTERACTIVE CARD LOGIC
+           ========================================= */
+        const noBtn = document.getElementById('noBtn');
+        const yesBtn = document.getElementById('yesBtn');
+        const question = document.getElementById('question');
+        const btnContainer = document.querySelector('.btn-container');
+        const successMsg = document.getElementById('successMsg');
+        
+        let noAttempts = 0;
+        const maxAttempts = 4;
+
+        // Function to move the "No" button
+        function moveNoButton() {
+            if (noAttempts >= maxAttempts) return;
+
+            // Calculate random position within the window
+            // Subtract button dimensions (approx 100px width, 50px height) to keep it on screen
+            const maxX = window.innerWidth - 120; 
+            const maxY = window.innerHeight - 60;
+            
+            const randomX = Math.random() * maxX;
+            const randomY = Math.random() * maxY;
+
+            // Switch to fixed positioning so it breaks out of the flex container
+            noBtn.style.position = 'fixed';
+            noBtn.style.left = randomX + 'px';
+            noBtn.style.top = randomY + 'px';
+            
+            noAttempts++;
+
+            // Fade out logic on final attempt
+            if (noAttempts === maxAttempts) {
+                noBtn.style.opacity = '0';
+                noBtn.style.pointerEvents = 'none'; // Make unclickable
+            }
         }
-      }
-    }
 
-    function initGarden() {
-      roses = [];
-      const count = Math.floor((width * height) / 40000);
-      for (let i = 0; i < count; i++) roses.push(new Rose());
-    }
+        // Trigger on hover (desktop)
+        noBtn.addEventListener('mouseover', moveNoButton);
+        // Trigger on click/touch (mobile/tablet fallback)
+        noBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent actual click
+            moveNoButton();
+        });
+        noBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            moveNoButton();
+        });
 
-    function animate() {
-      ctx.fillStyle = '#000';
-      ctx.shadowBlur = 0;
-      ctx.fillRect(0, 0, width, height);
+        // "Yes" Button Logic
+        yesBtn.addEventListener('click', () => {
+            // Hide buttons and question
+            btnContainer.style.display = 'none';
+            question.style.display = 'none';
+            
+            // Show success message
+            successMsg.style.display = 'block';
+            
+            // Optional: Intensify the garden (make roses bloom faster or more density)
+            roses.forEach(rose => {
+                rose.glowColor = '#ff6b81';
+                rose.speed *= 5; // Party mode!
+            });
+        });
 
-      const time = Date.now() * 0.001;
-      roses.forEach(rose => rose.update(time));
-
-      requestAnimationFrame(animate);
-    }
-
-    resize();
-    animate();
-
-    // ====== VALENTINE UI LOGIC ======
-    const yesBtn = document.getElementById('yesBtn');
-    const noBtn = document.getElementById('noBtn');
-    const msg = document.getElementById('msg');
-
-    let escapes = 0;
-    const maxEscapes = 4;
-
-    yesBtn.addEventListener('click', () => {
-      msg.style.display = 'block';
-      msg.textContent = 'Yay! 💐';
-    });
-
-    // Make NO button "escape" on hover or click attempt
-    noBtn.addEventListener('mouseenter', escapeNo);
-    noBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      escapeNo();
-    });
-
-    function escapeNo() {
-      escapes++;
-
-      // After a few tries: fade & remove
-      if (escapes >= maxEscapes) {
-        noBtn.style.opacity = '0';
-        noBtn.style.pointerEvents = 'none';
-        setTimeout(() => noBtn.remove(), 300);
-        return;
-      }
-
-      // Move to random on-screen position
-      const btnRect = noBtn.getBoundingClientRect();
-      const padding = 12;
-
-      const maxX = window.innerWidth - btnRect.width - padding;
-      const maxY = window.innerHeight - btnRect.height - padding;
-
-      const x = Math.random() * maxX + padding;
-      const y = Math.random() * maxY + padding;
-
-      noBtn.style.position = 'fixed';
-      noBtn.style.left = `${x}px`;
-      noBtn.style.top = `${y}px`;
-    }
-  </script>
+    </script>
 </body>
 </html>
