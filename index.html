@@ -1,416 +1,530 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>A Question for You...</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>A Question for You...</title>
 
-    <style>
-        /* =========================================
-           1. CSS VARIABLES & RESET
-           ========================================= */
-        :root {
-            --bg-color: #000000;
-            --card-bg: #F5F1E8; /* Warm Cream */
-            --text-main: #2D2424; /* Soft Black */
-            --text-sub: #635858; /* Warm Grey */
-            --accent-pink: #E85D75; /* Romantic Pink */
-            --accent-hover: #D0455E;
-            --btn-shadow: 0 4px 15px rgba(232, 93, 117, 0.4);
-        }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
 
-        * { box-sizing: border-box; }
+  <style>
+    /* =========================================
+       1. CSS VARIABLES & RESET
+       ========================================= */
+    :root {
+      --bg-color: #000000;
+      --card-bg: #F5F1E8;          /* Warm Cream */
+      --text-main: #2D2424;        /* Soft Black */
+      --text-sub: #635858;         /* Warm Grey */
+      --accent-pink: #E85D75;      /* Romantic Pink */
+      --accent-hover: #D0455E;
+      --btn-shadow: 0 10px 28px rgba(232, 93, 117, 0.35);
+    }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--bg-color);
-            overflow: hidden; /* No scrollbars */
-            font-family: 'DM Sans', sans-serif;
-            -webkit-font-smoothing: antialiased;
-        }
+    * { box-sizing: border-box; }
 
-        /* =========================================
-           2. CANVAS BACKGROUND (Z-INDEX 1)
-           ========================================= */
-        canvas#garden {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            display: block;
-        }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-color);
+      overflow: hidden;
+      font-family: 'DM Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
 
-        /* =========================================
-           3. UI FOREGROUND (Z-INDEX 10)
-           ========================================= */
-        .ui-overlay {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            pointer-events: none; /* Let clicks pass through to canvas */
-        }
+    /* =========================================
+       2. CANVAS BACKGROUND (Z-INDEX 1)
+       ========================================= */
+    canvas#garden {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      display: block;
+    }
 
-        /* The Glass/Cream Card */
-        .card {
-            background: var(--card-bg);
-            width: 100%;
-            max-width: 420px;
-            border-radius: 24px;
-            padding: 0 30px 40px 30px; /* Top padding is 0 because image pulls up */
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-            position: relative;
-            pointer-events: auto; /* Re-enable interaction */
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.5s;
-        }
+    /* =========================================
+       3. UI FOREGROUND (Z-INDEX 10)
+       ========================================= */
+    .ui-overlay {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      pointer-events: none;
+    }
 
-        @keyframes fadeUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
+    /* Vignette + soft bloom overlay */
+    .ui-overlay::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9;
+      background:
+        radial-gradient(80% 60% at 50% 45%, rgba(232,93,117,0.08), transparent 60%),
+        radial-gradient(120% 90% at 50% 55%, rgba(0,0,0,0.35), rgba(0,0,0,0.85));
+    }
 
-        /* --- NEW ANIMATION FOR CHARACTER --- */
-        @keyframes charFloat {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-8px); /* Moves up slightly */
-            }
-        }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-        /* The Hero Image (Overlapping Top) */
-        .hero-image-wrapper {
-            width: 140px;
-            height: 140px;
-            margin: -70px auto 20px auto; /* Negative margin pulls it up */
-            position: relative;
-            border-radius: 50%;
-            background: var(--card-bg);
-            padding: 5px; /* Creates a border effect */
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-            
-            /* APPLYING THE ANIMATION */
-            animation: charFloat 3s ease-in-out infinite;
-        }
+    .card {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 420px;
+      border-radius: 28px;
+      padding: 0 30px 40px 30px;
+      text-align: center;
+      position: relative;
+      pointer-events: auto;
 
-        .hero-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-            image-rendering: pixelated; /* Keeps your pixel art crisp */
-            background-color: #fff;
-        }
+      box-shadow:
+        0 30px 70px rgba(0,0,0,0.60),
+        0 10px 25px rgba(0,0,0,0.25);
 
-        /* Typography */
-        h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 2rem;
-            color: var(--text-main);
-            margin: 0 0 10px 0;
-            line-height: 1.2;
-            letter-spacing: -0.5px;
-        }
+      border: 1px solid rgba(255,255,255,0.55);
 
-        p.subtext {
-            font-size: 0.95rem;
-            color: var(--text-sub);
-            margin: 0 0 30px 0;
-            line-height: 1.5;
-        }
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.5s;
+    }
 
-        /* Buttons Area */
-        .actions {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            position: relative;
-            min-height: 60px; /* Reserves space so layout doesn't jump */
-        }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset: 1px;
+      border-radius: 27px;
+      pointer-events:none;
+      background: radial-gradient(120% 90% at 50% 0%,
+        rgba(255,255,255,0.65), rgba(255,255,255,0.0) 55%);
+      opacity: 0.55;
+    }
 
-        .btn {
-            border: none;
-            padding: 14px 32px;
-            font-size: 1rem;
-            font-weight: 700;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: 'DM Sans', sans-serif;
-            outline: none;
-        }
+    /* =========================================
+       4. CHARACTER BADGE (ON TOP OF CARD)
+       ========================================= */
+    @keyframes charFloat {
+      0%, 100% { transform: translateY(0) rotate(-1.2deg); }
+      50%      { transform: translateY(-10px) rotate(1.2deg); }
+    }
 
-        .btn-yes {
-            background-color: var(--accent-pink);
-            color: white;
-            box-shadow: var(--btn-shadow);
-        }
+    .hero-image-wrapper {
+      width: 140px;
+      height: 140px;
+      margin: -74px auto 18px auto;
+      position: relative;
+      border-radius: 999px;
 
-        .btn-yes:hover {
-            background-color: var(--accent-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(232, 93, 117, 0.6);
-        }
+      background: rgba(245,241,232,0.96);
+      border: 6px solid rgba(255,255,255,0.9);
 
-        .btn-yes:active {
-            transform: translateY(0);
-        }
+      box-shadow:
+        0 22px 45px rgba(0,0,0,0.30),
+        0 8px 18px rgba(0,0,0,0.18);
 
-        .btn-no {
-            background-color: #E0E0E0;
-            color: var(--text-sub);
-            /* Important: Transition for the smooth escape effect */
-            transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); 
-        }
+      display: grid;
+      place-items: center;
 
-        /* State: Success Message (Hidden by default) */
-        .success-state {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            animation: fadeIn 0.5s ease;
-        }
+      animation: charFloat 2.8s ease-in-out infinite;
+      will-change: transform;
+      z-index: 2;
+    }
 
-        .success-state h2 {
-            font-family: 'Playfair Display', serif;
-            color: var(--accent-pink);
-            font-size: 2.2rem;
-            margin: 0;
-        }
-        
-        .success-state p {
-            color: var(--text-sub);
-            margin-top: 5px;
-        }
+    .hero-image-wrapper::after{
+      content:"";
+      position:absolute;
+      inset:-10px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(232,93,117,0.18), transparent 60%);
+      filter: blur(2px);
+      opacity: 0.85;
+      pointer-events:none;
+    }
 
-        .emoji-confetti {
-            font-size: 3rem;
-            margin-top: 10px;
-            animation: bounce 1s infinite alternate;
-        }
+    .hero-image {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
 
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    /* =========================================
+       5. TYPOGRAPHY
+       ========================================= */
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--text-main);
+      margin: 0 0 10px 0;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      position: relative;
+      z-index: 2;
+    }
 
-    </style>
+    p.subtext {
+      font-size: 0.98rem;
+      color: var(--text-sub);
+      margin: 0 0 30px 0;
+      line-height: 1.55;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* =========================================
+       6. BUTTONS
+       ========================================= */
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      position: relative;
+      min-height: 64px;
+      z-index: 2;
+    }
+
+    .btn {
+      border: none;
+      padding: 14px 32px;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, opacity 0.25s ease;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-yes {
+      background-color: var(--accent-pink);
+      color: white;
+      box-shadow: var(--btn-shadow);
+    }
+
+    .btn-yes:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 14px 34px rgba(232, 93, 117, 0.55);
+    }
+
+    .btn-yes:active { transform: translateY(0); }
+
+    .btn-no {
+      background-color: #E0E0E0;
+      color: var(--text-sub);
+      transition: transform 0.22s ease, opacity 0.25s ease, left 0.28s ease, top 0.28s ease;
+      will-change: left, top;
+    }
+
+    /* =========================================
+       7. SUCCESS STATE
+       ========================================= */
+    .success-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.5s ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .success-state h2 {
+      font-family: 'Playfair Display', serif;
+      color: var(--accent-pink);
+      font-size: 2.2rem;
+      margin: 0;
+    }
+
+    .success-state p {
+      color: var(--text-sub);
+      margin-top: 6px;
+      margin-bottom: 0;
+    }
+
+    .emoji-confetti {
+      font-size: 3rem;
+      margin-top: 10px;
+      animation: bounce 1s infinite alternate;
+    }
+
+    @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+    /* Optional: respect reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .card, .hero-image-wrapper, .emoji-confetti { animation: none !important; }
+      .btn, .btn-no { transition: none !important; }
+    }
+  </style>
 </head>
 <body>
 
-    <canvas id="garden"></canvas>
+  <canvas id="garden"></canvas>
 
-    <div class="ui-overlay">
-        <div class="card" id="card">
-            
-            <div class="hero-image-wrapper">
-                <img src="character.png" alt="Pixel Art Character" class="hero-image">
-            </div>
+  <div class="ui-overlay">
+    <div class="card" id="card">
 
-            <div id="question-state">
-                <h1>Will you be my Valentine?</h1>
-                <p class="subtext">No pressure… but I’ll be really happy if you say yes.</p>
-                
-                <div class="actions">
-                    <button class="btn btn-yes" id="yesBtn">Yes</button>
-                    <button class="btn btn-no" id="noBtn" tabindex="0">No</button>
-                </div>
-            </div>
+      <div class="hero-image-wrapper" id="heroWrap">
+        <!-- Change this to your actual pixel character file -->
+        <img src="character.png" alt="Pixel Art Character" class="hero-image">
+      </div>
 
-            <div id="success-state" class="success-state">
-                <h2>Yay!</h2>
-                <div class="emoji-confetti">💐 💖 ✨</div>
-                <p>See you on the 14th!</p>
-            </div>
+      <div id="question-state">
+        <h1>Will you be my Valentine?</h1>
+        <p class="subtext">No pressure… but I’ll be really happy if you say yes.</p>
 
+        <div class="actions">
+          <button class="btn btn-yes" id="yesBtn">Yes</button>
+          <button class="btn btn-no" id="noBtn" tabindex="0">No</button>
         </div>
+      </div>
+
+      <div id="success-state" class="success-state">
+        <h2>Yay!</h2>
+        <div class="emoji-confetti">💐 💖 ✨</div>
+        <p>See you on the 14th!</p>
+      </div>
+
     </div>
+  </div>
 
-    <script>
-        /* =========================================
-           PART A: THE PIXEL GARDEN (Optimized)
-           ========================================= */
-        const canvas = document.getElementById('garden');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        let roses = [];
-        const PIXEL_SIZE = 4;
-        const GRID_ALIGN = true;
+  <script>
+    /* =========================================
+       PART A: THE PIXEL GARDEN
+       ========================================= */
+    const canvas = document.getElementById('garden');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let roses = [];
+    const PIXEL_SIZE = 4;
+    const GRID_ALIGN = true;
 
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            initGarden();
-        }
-        window.addEventListener('resize', resize);
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      initGarden();
+    }
+    window.addEventListener('resize', resize);
 
-        // Helper
-        function random(min, max) { return Math.random() * (max - min) + min; }
+    function random(min, max) { return Math.random() * (max - min) + min; }
 
-        class Rose {
-            constructor() { this.init(); }
+    class Rose {
+      constructor() { this.init(); }
 
-            init() {
-                this.x = random(width * 0.05, width * 0.95);
-                this.y = random(height * 0.1, height * 0.95);
-                const hue = random(330, 360); 
-                this.color = `hsl(${hue}, 80%, 50%)`;
-                this.glowColor = `hsl(${hue}, 100%, 70%)`;
-                this.phase = random(0, Math.PI * 2);
-                this.speed = random(0.005, 0.015);
-                this.scale = random(2, 4);
-                this.maxBloom = random(0.8, 1.2);
-                this.swayOffset = random(0, 100);
-                this.swaySpeed = random(0.001, 0.003);
-            }
+      init() {
+        this.x = random(width * 0.05, width * 0.95);
+        this.y = random(height * 0.1, height * 0.95);
+        const hue = random(330, 360);
+        this.color = `hsl(${hue}, 80%, 50%)`;
+        this.glowColor = `hsl(${hue}, 100%, 70%)`;
+        this.phase = random(0, Math.PI * 2);
+        this.speed = random(0.005, 0.015);
+        this.scale = random(2, 4);
+        this.maxBloom = random(0.8, 1.2);
+        this.swayOffset = random(0, 100);
+        this.swaySpeed = random(0.001, 0.003);
+      }
 
-            update(time) {
-                const t = time * this.speed + this.phase;
-                const cycle = (Math.sin(t) + 1) / 2; 
-                const bloomLevel = Math.min(cycle * 1.5, 1) * this.maxBloom; 
-                
-                let alpha = 1;
-                let glow = 0;
-                
-                if (cycle > 0.8) {
-                    glow = (cycle - 0.8) * 100;
-                    alpha = 0.8 + Math.sin(time * 0.1) * 0.2;
-                } else if (cycle < 0.2) {
-                    alpha = cycle * 5; 
-                }
-                this.draw(bloomLevel, alpha, glow);
-            }
+      update(time) {
+        const t = time * this.speed + this.phase;
+        const cycle = (Math.sin(t) + 1) / 2;
+        const bloomLevel = Math.min(cycle * 1.5, 1) * this.maxBloom;
 
-            drawPixel(relX, relY, color, alpha) {
-                ctx.fillStyle = color;
-                ctx.globalAlpha = alpha;
-                let drawX = this.x + (relX * PIXEL_SIZE * this.scale);
-                let drawY = this.y + (relY * PIXEL_SIZE * this.scale);
-                const sway = Math.sin(Date.now() * this.swaySpeed + this.swayOffset) * (20 * this.scale);
-                drawX += sway;
-                if (GRID_ALIGN) {
-                    drawX = Math.floor(drawX / PIXEL_SIZE) * PIXEL_SIZE;
-                    drawY = Math.floor(drawY / PIXEL_SIZE) * PIXEL_SIZE;
-                }
-                ctx.fillRect(drawX, drawY, PIXEL_SIZE * this.scale, PIXEL_SIZE * this.scale);
-            }
+        let alpha = 1;
+        let glow = 0;
 
-            draw(bloom, alpha, glowLevel) {
-                // Stem
-                if (bloom > 0.1) {
-                    for (let i = 1; i < 6; i++) {
-                        this.drawPixel(0, i + 2, '#2d6e32', alpha); 
-                        if (i === 3) { this.drawPixel(-1, i + 2, '#2d6e32', alpha); this.drawPixel(1, i + 3, '#2d6e32', alpha); }
-                    }
-                }
-                // Petals
-                if (bloom > 0.2) this.drawPixel(0, 0, '#601120', alpha);
-                if (bloom > 0.3) this.drawPixel(0, 1, '#601120', alpha);
-                if (bloom > 0.5) { this.drawPixel(-1, 0, this.color, alpha); this.drawPixel(1, 0, this.color, alpha); this.drawPixel(0, -1, this.color, alpha); }
-                if (bloom > 0.8) {
-                    this.drawPixel(-1, -1, this.color, alpha); this.drawPixel(1, -1, this.color, alpha);
-                    this.drawPixel(-1, 1, this.color, alpha); this.drawPixel(1, 1, this.color, alpha);
-                    this.drawPixel(-2, 0, this.color, alpha); this.drawPixel(2, 0, this.color, alpha);
-                }
-                if (glowLevel > 0) { ctx.shadowBlur = glowLevel; ctx.shadowColor = this.glowColor; } 
-                else { ctx.shadowBlur = 0; }
-            }
+        if (cycle > 0.8) {
+          glow = (cycle - 0.8) * 100;
+          alpha = 0.8 + Math.sin(time * 0.1) * 0.2;
+        } else if (cycle < 0.2) {
+          alpha = cycle * 5;
         }
 
-        function initGarden() {
-            roses = [];
-            const count = Math.floor((width * height) / 35000); // Slight increase in density
-            for (let i = 0; i < count; i++) roses.push(new Rose());
+        this.draw(bloomLevel, alpha, glow);
+      }
+
+      drawPixel(relX, relY, color, alpha) {
+        ctx.fillStyle = color;
+        ctx.globalAlpha = alpha;
+
+        let drawX = this.x + (relX * PIXEL_SIZE * this.scale);
+        let drawY = this.y + (relY * PIXEL_SIZE * this.scale);
+
+        const sway = Math.sin(Date.now() * this.swaySpeed + this.swayOffset) * (20 * this.scale);
+        drawX += sway;
+
+        if (GRID_ALIGN) {
+          drawX = Math.floor(drawX / PIXEL_SIZE) * PIXEL_SIZE;
+          drawY = Math.floor(drawY / PIXEL_SIZE) * PIXEL_SIZE;
         }
 
-        function animate() {
-            ctx.clearRect(0, 0, width, height); // Clear cleanly for crisp UI
-            const time = Date.now() * 0.001;
-            roses.forEach(rose => rose.update(time));
-            requestAnimationFrame(animate);
-        }
+        ctx.fillRect(drawX, drawY, PIXEL_SIZE * this.scale, PIXEL_SIZE * this.scale);
+      }
 
-        resize();
-        animate();
-
-
-        /* =========================================
-           PART B: INTERACTION LOGIC
-           ========================================= */
-        const yesBtn = document.getElementById('yesBtn');
-        const noBtn = document.getElementById('noBtn');
-        const questionState = document.getElementById('question-state');
-        const successState = document.getElementById('success-state');
-        
-        let noAttempts = 0;
-        const MAX_ATTEMPTS = 5;
-
-        // 1. The "Escaping" No Button
-        function moveNoButton() {
-            if (noAttempts >= MAX_ATTEMPTS) return;
-
-            // Get viewport dimensions
-            const safeMargin = 40; // Don't touch the very edge
-            const btnRect = noBtn.getBoundingClientRect();
-            
-            // Calculate available space
-            const maxX = window.innerWidth - btnRect.width - safeMargin;
-            const maxY = window.innerHeight - btnRect.height - safeMargin;
-
-            // Random coordinates (ensuring it stays on screen)
-            const randomX = Math.max(safeMargin, Math.random() * maxX);
-            const randomY = Math.max(safeMargin, Math.random() * maxY);
-
-            // Apply Fixed Position to break out of the card flow
-            noBtn.style.position = 'fixed';
-            noBtn.style.left = randomX + 'px';
-            noBtn.style.top = randomY + 'px';
-            noBtn.style.zIndex = '100'; // Ensure it floats above everything
-
-            noAttempts++;
-
-            // If they keep trying, fade it out
-            if (noAttempts === MAX_ATTEMPTS) {
-                noBtn.style.opacity = '0';
-                noBtn.style.pointerEvents = 'none';
+      draw(bloom, alpha, glowLevel) {
+        if (bloom > 0.1) {
+          for (let i = 1; i < 6; i++) {
+            this.drawPixel(0, i + 2, '#2d6e32', alpha);
+            if (i === 3) {
+              this.drawPixel(-1, i + 2, '#2d6e32', alpha);
+              this.drawPixel(1, i + 3, '#2d6e32', alpha);
             }
+          }
         }
 
-        // Add Listeners for Mouse, Touch, and Keyboard Focus
-        noBtn.addEventListener('mouseover', moveNoButton); // Desktop hover
-        noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNoButton(); }); // Mobile touch
-        noBtn.addEventListener('click', (e) => { e.preventDefault(); moveNoButton(); }); // Just in case
-        noBtn.addEventListener('focus', moveNoButton); // Accessibility (Tab key)
+        if (bloom > 0.2) this.drawPixel(0, 0, '#601120', alpha);
+        if (bloom > 0.3) this.drawPixel(0, 1, '#601120', alpha);
 
-        // 2. The "Yes" Button
-        yesBtn.addEventListener('click', () => {
-            // UI Transition
-            questionState.style.display = 'none';
-            successState.style.display = 'flex';
+        if (bloom > 0.5) {
+          this.drawPixel(-1, 0, this.color, alpha);
+          this.drawPixel(1, 0, this.color, alpha);
+          this.drawPixel(0, -1, this.color, alpha);
+        }
 
-            // Garden Party Mode
-            roses.forEach(rose => {
-                rose.color = '#FF6B81'; // Uniform pink
-                rose.glowColor = '#FF9CA9';
-                rose.speed *= 5; // Bloom faster
-                rose.swaySpeed *= 3; // Dance faster
-            });
-        });
+        if (bloom > 0.8) {
+          this.drawPixel(-1, -1, this.color, alpha);
+          this.drawPixel(1, -1, this.color, alpha);
+          this.drawPixel(-1, 1, this.color, alpha);
+          this.drawPixel(1, 1, this.color, alpha);
+          this.drawPixel(-2, 0, this.color, alpha);
+          this.drawPixel(2, 0, this.color, alpha);
+        }
 
-    </script>
+        if (glowLevel > 0) {
+          ctx.shadowBlur = glowLevel;
+          ctx.shadowColor = this.glowColor;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+      }
+    }
+
+    function initGarden() {
+      roses = [];
+      const count = Math.floor((width * height) / 35000);
+      for (let i = 0; i < count; i++) roses.push(new Rose());
+    }
+
+    function animate() {
+      // solid black base every frame (crisp)
+      ctx.fillStyle = "#000";
+      ctx.shadowBlur = 0;
+      ctx.fillRect(0, 0, width, height);
+
+      const time = Date.now() * 0.001;
+      roses.forEach(rose => rose.update(time));
+
+      requestAnimationFrame(animate);
+    }
+
+    resize();
+    animate();
+
+    /* =========================================
+       PART B: INTERACTION LOGIC
+       ========================================= */
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn = document.getElementById('noBtn');
+    const questionState = document.getElementById('question-state');
+    const successState = document.getElementById('success-state');
+    const card = document.getElementById('card');
+    const heroWrap = document.getElementById('heroWrap');
+
+    let noAttempts = 0;
+    const MAX_ATTEMPTS = 5;
+
+    function moveNoButton() {
+      if (noAttempts >= MAX_ATTEMPTS) return;
+
+      const safeMargin = 24;
+      const btnRect = noBtn.getBoundingClientRect();
+      const avoid = card.getBoundingClientRect();
+
+      const maxX = window.innerWidth - btnRect.width - safeMargin;
+      const maxY = window.innerHeight - btnRect.height - safeMargin;
+
+      let randomX, randomY, tries = 0;
+
+      // Avoid landing on top of the card for a cleaner feel
+      do {
+        randomX = safeMargin + Math.random() * maxX;
+        randomY = safeMargin + Math.random() * maxY;
+        tries++;
+      } while (
+        tries < 12 &&
+        randomX > (avoid.left - btnRect.width) &&
+        randomX < (avoid.right) &&
+        randomY > (avoid.top - btnRect.height) &&
+        randomY < (avoid.bottom)
+      );
+
+      noBtn.style.position = 'fixed';
+      noBtn.style.left = randomX + 'px';
+      noBtn.style.top = randomY + 'px';
+      noBtn.style.zIndex = '100';
+
+      // Tiny "whoosh" scale for delight
+      noBtn.style.transform = 'scale(1.02)';
+      setTimeout(() => noBtn.style.transform = 'scale(1)', 120);
+
+      noAttempts++;
+
+      if (noAttempts === MAX_ATTEMPTS) {
+        noBtn.style.opacity = '0';
+        noBtn.style.pointerEvents = 'none';
+        setTimeout(() => {
+          if (noBtn && noBtn.parentNode) noBtn.parentNode.removeChild(noBtn);
+        }, 260);
+      }
+    }
+
+    // Mouse / Touch / Click / Keyboard focus
+    noBtn.addEventListener('mouseover', moveNoButton);
+    noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNoButton(); }, { passive: false });
+    noBtn.addEventListener('click', (e) => { e.preventDefault(); moveNoButton(); });
+    noBtn.addEventListener('focus', moveNoButton);
+
+    yesBtn.addEventListener('click', () => {
+      // UI Transition
+      questionState.style.display = 'none';
+      successState.style.display = 'flex';
+
+      // Pop the character badge a bit
+      heroWrap.animate(
+        [
+          { transform: 'translateY(0) rotate(-1deg) scale(1)' },
+          { transform: 'translateY(-10px) rotate(1deg) scale(1.06)' },
+          { transform: 'translateY(0) rotate(-1deg) scale(1)' }
+        ],
+        { duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' }
+      );
+
+      // Garden Party Mode
+      roses.forEach(rose => {
+        rose.color = '#FF6B81';
+        rose.glowColor = '#FF9CA9';
+        rose.speed *= 5;
+        rose.swaySpeed *= 3;
+      });
+    });
+  </script>
 </body>
 </html>
