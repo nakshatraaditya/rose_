@@ -93,7 +93,7 @@
         /* Video Frame */
         .photo-frame {
             width: 100%;
-            /* CHANGED: Aspect Ratio 3/4 (Portrait) fits standing people better */
+            /* Aspect Ratio 3/4 (Portrait) fits standing people better */
             aspect-ratio: 3 / 4; 
             background: #000;
             overflow: hidden;
@@ -103,7 +103,7 @@
         .hero-video {
             width: 100%;
             height: 100%;
-            /* CHANGED: 'contain' shrinks the video to show the FULL character */
+            /* 'contain' shrinks the video to show the FULL character */
             object-fit: contain; 
             display: block;
         }
@@ -269,12 +269,16 @@
         });
 
         /* ------------------------------------------------
-           PART 2: BACKGROUND ANIMATION
+           PART 2: DETAILED PIXEL ROSES (Restored)
            ------------------------------------------------ */
         const canvas = document.getElementById('garden');
         const ctx = canvas.getContext('2d');
-        let width, height, roses = [];
+        let width, height;
+        let roses = [];
         
+        const PIXEL_SIZE = 4;
+        const GRID_ALIGN = true;
+
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
@@ -286,38 +290,85 @@
 
         class Rose {
             constructor() { this.init(); }
+
             init() {
                 this.x = random(width * 0.05, width * 0.95);
                 this.y = random(height * 0.1, height * 0.95);
-                this.color = `hsl(${random(330, 360)}, 80%, 50%)`;
+                const hue = random(330, 360); 
+                this.color = `hsl(${hue}, 80%, 50%)`;
+                this.glowColor = `hsl(${hue}, 100%, 70%)`;
                 this.phase = random(0, Math.PI * 2);
                 this.speed = random(0.005, 0.015);
                 this.scale = random(2, 4);
+                this.maxBloom = random(0.8, 1.2);
+                this.swayOffset = random(0, 100);
+                this.swaySpeed = random(0.001, 0.003);
             }
+
             update(time) {
-                const cycle = (Math.sin(time * this.speed + this.phase) + 1) / 2;
-                const bloom = cycle * 1.5;
-                this.draw(bloom);
+                const t = time * this.speed + this.phase;
+                const cycle = (Math.sin(t) + 1) / 2; 
+                const bloomLevel = Math.min(cycle * 1.5, 1) * this.maxBloom; 
+                
+                let alpha = 1;
+                let glow = 0;
+                
+                if (cycle > 0.8) {
+                    glow = (cycle - 0.8) * 100;
+                    alpha = 0.8 + Math.sin(time * 0.1) * 0.2;
+                } else if (cycle < 0.2) {
+                    alpha = cycle * 5; 
+                }
+                this.draw(bloomLevel, alpha, glow);
             }
-            draw(bloom) {
-                let alpha = bloom > 0.8 ? 0.8 : bloom * 5;
-                ctx.fillStyle = this.color;
+
+            drawPixel(relX, relY, color, alpha) {
+                ctx.fillStyle = color;
                 ctx.globalAlpha = alpha;
-                let size = 4 * this.scale;
-                if(bloom > 0.5) ctx.fillRect(this.x, this.y, size, size); 
+                let drawX = this.x + (relX * PIXEL_SIZE * this.scale);
+                let drawY = this.y + (relY * PIXEL_SIZE * this.scale);
+                const sway = Math.sin(Date.now() * this.swaySpeed + this.swayOffset) * (20 * this.scale);
+                drawX += sway;
+                if (GRID_ALIGN) {
+                    drawX = Math.floor(drawX / PIXEL_SIZE) * PIXEL_SIZE;
+                    drawY = Math.floor(drawY / PIXEL_SIZE) * PIXEL_SIZE;
+                }
+                ctx.fillRect(drawX, drawY, PIXEL_SIZE * this.scale, PIXEL_SIZE * this.scale);
+            }
+
+            draw(bloom, alpha, glowLevel) {
+                // Stem
+                if (bloom > 0.1) {
+                    for (let i = 1; i < 6; i++) {
+                        this.drawPixel(0, i + 2, '#2d6e32', alpha); 
+                        if (i === 3) { this.drawPixel(-1, i + 2, '#2d6e32', alpha); this.drawPixel(1, i + 3, '#2d6e32', alpha); }
+                    }
+                }
+                // Petals
+                if (bloom > 0.2) this.drawPixel(0, 0, '#601120', alpha);
+                if (bloom > 0.3) this.drawPixel(0, 1, '#601120', alpha);
+                if (bloom > 0.5) { this.drawPixel(-1, 0, this.color, alpha); this.drawPixel(1, 0, this.color, alpha); this.drawPixel(0, -1, this.color, alpha); }
+                if (bloom > 0.8) {
+                    this.drawPixel(-1, -1, this.color, alpha); this.drawPixel(1, -1, this.color, alpha);
+                    this.drawPixel(-1, 1, this.color, alpha); this.drawPixel(1, 1, this.color, alpha);
+                    this.drawPixel(-2, 0, this.color, alpha); this.drawPixel(2, 0, this.color, alpha);
+                }
+                if (glowLevel > 0) { ctx.shadowBlur = glowLevel; ctx.shadowColor = this.glowColor; } 
+                else { ctx.shadowBlur = 0; }
             }
         }
 
         function initGarden() {
             roses = [];
-            for (let i = 0; i < 40; i++) roses.push(new Rose());
+            // Adjusted count for good density
+            const count = Math.floor((width * height) / 35000);
+            for (let i = 0; i < count; i++) roses.push(new Rose());
         }
 
         function animate() {
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, width, height);
+            ctx.clearRect(0, 0, width, height);
             const time = Date.now() * 0.001;
-            roses.forEach(r => r.update(time));
+            roses.forEach(rose => rose.update(time));
             requestAnimationFrame(animate);
         }
         
