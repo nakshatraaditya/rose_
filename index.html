@@ -7,7 +7,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Caveat:wght@600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
 
     <style>
         /* =========================================
@@ -15,12 +15,12 @@
            ========================================= */
         :root {
             --bg-color: #000000;
-            --card-bg: #F5F1E8;      /* Warm Cream */
+            --polaroid-bg: #ffffff;  /* Pure white for polaroid */
             --text-main: #2D2424;    /* Soft Black */
             --text-sub: #635858;     /* Warm Grey */
             --accent-pink: #E85D75;  /* Romantic Pink */
             --accent-hover: #D0455E;
-            --btn-shadow: 0 10px 28px rgba(232, 93, 117, 0.35);
+            --btn-shadow: 0 4px 15px rgba(232, 93, 117, 0.35);
         }
 
         * { box-sizing: border-box; }
@@ -61,124 +61,155 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
-            pointer-events: none; /* Let clicks pass through outside card */
+            pointer-events: none; 
         }
 
-        /* Vignette Overlay */
+        /* Dark Vignette to make Polaroid pop */
         .ui-overlay::before {
             content:"";
             position: fixed;
             inset: 0;
             pointer-events: none;
             z-index: 9;
-            background: radial-gradient(120% 90% at 50% 55%, rgba(0,0,0,0.35), rgba(0,0,0,0.85));
+            background: radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.8));
         }
 
         /* =========================================
-           4. THE CARD
+           4. THE POLAROID CARD
            ========================================= */
-        .card {
-            background: var(--card-bg);
+        .polaroid {
+            background: var(--polaroid-bg);
             width: 100%;
-            max-width: 400px; /* Slightly tighter width */
-            border-radius: 28px;
-            padding: 20px;
-            text-align: center;
-            position: relative;
-            pointer-events: auto; /* Enable clicks */
+            max-width: 480px; /* Bigger width */
+            padding: 15px 15px 0 15px; /* Top/Side padding. Bottom handled by caption */
             
-            box-shadow: 0 30px 70px rgba(0,0,0,0.60), 0 10px 25px rgba(0,0,0,0.25);
-            border: 1px solid rgba(255,255,255,0.55);
-
-            /* Simple Fade In */
+            /* Polaroid Shadow & Rotate */
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 5px 15px rgba(0,0,0,0.2);
+            transform: rotate(-2deg) translateY(30px); /* Tilted look + animation start pos */
             opacity: 0;
-            transform: translateY(20px);
-            animation: fadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.3s;
+            
+            position: relative;
+            pointer-events: auto;
+            border-radius: 4px; /* Slight edge rounding */
+            
+            animation: floatIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.5s;
         }
 
-        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        @keyframes floatIn {
+            to { opacity: 1; transform: rotate(-2deg) translateY(0); }
+        }
 
         /* =========================================
-           5. VIDEO PLAYER (RECTANGLE)
+           5. VIDEO AREA (The "Photo")
            ========================================= */
-        .video-container {
+        .photo-frame {
             width: 100%;
-            margin-bottom: 20px;
-            border-radius: 16px;
-            overflow: hidden; /* Rounds the video corners */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             background: #000;
+            aspect-ratio: 1 / 1; /* Forces a square or portrait look */
+            overflow: hidden;
+            border: 1px solid #eee;
+            position: relative;
         }
 
         .hero-video {
             width: 100%;
-            height: auto;
-            max-height: 350px; /* Limits height so it fits on screen */
+            height: 100%;
+            object-fit: cover; /* Fills the square perfectly */
             display: block;
-            object-fit: cover; /* Ensures it fills the box nicely */
+        }
+
+        /* Play Button Overlay (Only shows if autoplay fails) */
+        .play-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 5;
+        }
+        .play-icon {
+            font-size: 50px;
+            color: white;
+            opacity: 0.8;
         }
 
         /* =========================================
-           6. TYPOGRAPHY & BUTTONS
+           6. CAPTION / DIALOGUE BOX (Bottom Area)
            ========================================= */
-        h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 2rem;
-            color: var(--text-main);
-            margin: 0 0 25px 0;
-            line-height: 1.2;
+        .caption-area {
+            padding: 25px 10px 30px 10px; /* Thick bottom padding typical of Polaroids */
+            text-align: center;
+            min-height: 140px; /* Ensures space for text/buttons */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
+        /* Handwritten Question Style */
+        h1 {
+            font-family: 'Caveat', cursive, 'Playfair Display', serif; /* Handwritten font */
+            font-size: 2.2rem;
+            color: #333;
+            margin: 0 0 20px 0;
+            line-height: 1.1;
+            opacity: 0; /* Hidden initially */
+            transform: translateY(10px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .visible {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+        /* =========================================
+           7. BUTTONS
+           ========================================= */
         .actions {
             display: flex;
-            justify-content: center;
             gap: 20px;
-            position: relative;
-            min-height: 60px;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 0.8s ease 0.5s; /* Delays after text */
         }
 
         .btn {
             border: none;
-            padding: 14px 36px;
+            padding: 12px 35px;
             font-size: 1.1rem;
             font-weight: 700;
             border-radius: 50px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: transform 0.1s;
             font-family: 'DM Sans', sans-serif;
             outline: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
         .btn-yes {
             background-color: var(--accent-pink);
             color: white;
-            box-shadow: var(--btn-shadow);
+            box-shadow: 0 4px 10px rgba(232, 93, 117, 0.3);
         }
 
-        .btn-yes:hover {
-            background-color: var(--accent-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 14px 34px rgba(232, 93, 117, 0.55);
-        }
+        .btn-yes:active { transform: scale(0.95); }
 
         .btn-no {
-            background-color: #E0E0E0;
-            color: var(--text-sub);
+            background-color: #eee;
+            color: #555;
+            position: relative; /* For movement */
             transition: all 0.3s ease;
         }
 
-        /* Success State */
-        .success-state {
+        /* Success Message */
+        .success-msg {
             display: none;
-            flex-direction: column;
-            align-items: center;
-            animation: fadeIn 0.5s ease;
-            padding: 20px 0;
+            font-family: 'Caveat', cursive;
+            font-size: 2.5rem;
+            color: var(--accent-pink);
+            margin-top: 10px;
         }
-        .emoji-confetti { font-size: 3rem; margin-top: 10px; animation: bounce 1s infinite alternate; }
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
     </style>
 </head>
@@ -187,28 +218,31 @@
     <canvas id="garden"></canvas>
 
     <div class="ui-overlay">
-        <div class="card" id="card">
+        
+        <div class="polaroid">
             
-            <div class="video-container">
-                <video class="hero-video" autoplay muted playsinline>
+            <div class="photo-frame">
+                <video class="hero-video" id="mainVideo" autoplay muted playsinline>
                     <source src="character.mp4" type="video/mp4">
-                    <img src="character.png" alt="Character" style="width:100%; display:block;">
+                    <img src="character.png" alt="Video failed to load" style="width:100%;height:100%;object-fit:cover;">
                 </video>
-            </div>
-
-            <div id="content-area">
-                <h1>Will you be my Valentine?</h1>
                 
-                <div class="actions">
-                    <button class="btn btn-yes" id="yesBtn">Yes</button>
-                    <button class="btn btn-no" id="noBtn" tabindex="0">No</button>
+                <div class="play-overlay" id="playOverlay">
+                    <div class="play-icon">▶</div>
                 </div>
             </div>
 
-            <div id="success-state" class="success-state">
-                <h1 style="margin-bottom: 5px;">Yay!</h1>
-                <div class="emoji-confetti">💐 💖 ✨</div>
-                <p style="color:var(--text-sub); margin-top: 10px;">See you on the 14th!</p>
+            <div class="caption-area">
+                <h1 id="questionText">Will you be my Valentine?</h1>
+                
+                <div class="actions" id="actionButtons">
+                    <button class="btn btn-yes" id="yesBtn">Yes</button>
+                    <button class="btn btn-no" id="noBtn">No</button>
+                </div>
+
+                <div class="success-msg" id="successMsg">
+                    Yay! See you on the 14th! 💐
+                </div>
             </div>
 
         </div>
@@ -216,7 +250,79 @@
 
     <script>
         /* =========================================
-           PART 1: THE PIXEL GARDEN (Background)
+           PART 1: VIDEO HANDLING
+           ========================================= */
+        const video = document.getElementById('mainVideo');
+        const playOverlay = document.getElementById('playOverlay');
+        const questionText = document.getElementById('questionText');
+        const actionButtons = document.getElementById('actionButtons');
+
+        // Attempt to play immediately
+        video.play().catch(error => {
+            console.log("Autoplay blocked. Showing play button.");
+            playOverlay.style.display = 'flex';
+        });
+
+        // If user clicks overlay, play video
+        playOverlay.addEventListener('click', () => {
+            video.play();
+            playOverlay.style.display = 'none';
+        });
+
+        // When video starts playing, fade in the text
+        video.addEventListener('playing', () => {
+            setTimeout(() => {
+                questionText.classList.add('visible');
+                actionButtons.classList.add('visible');
+            }, 1000); // Wait 1 second after video starts
+        });
+
+        /* =========================================
+           PART 2: INTERACTION LOGIC
+           ========================================= */
+        const yesBtn = document.getElementById('yesBtn');
+        const noBtn = document.getElementById('noBtn');
+        const successMsg = document.getElementById('successMsg');
+        
+        // NO BUTTON ESCAPE
+        let noAttempts = 0;
+        const MAX_ATTEMPTS = 5;
+        
+        function moveNoButton() {
+            if (noAttempts >= MAX_ATTEMPTS) return;
+            
+            // Calculate random move
+            const randomX = (Math.random() - 0.5) * 200; // Move left/right up to 100px
+            const randomY = (Math.random() - 0.5) * 200; // Move up/down
+            
+            noBtn.style.transform = `translate(${randomX}px, ${randomY}px)`;
+            
+            noAttempts++;
+            if (noAttempts === MAX_ATTEMPTS) {
+                noBtn.style.opacity = '0';
+                noBtn.style.pointerEvents = 'none';
+            }
+        }
+
+        noBtn.addEventListener('mouseover', moveNoButton);
+        noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNoButton(); });
+
+        // YES BUTTON
+        yesBtn.addEventListener('click', () => {
+            questionText.style.display = 'none';
+            actionButtons.style.display = 'none';
+            successMsg.style.display = 'block';
+            
+            // Party Mode
+            roses.forEach(rose => {
+                rose.color = '#FF6B81';
+                rose.glowColor = '#FF9CA9';
+                rose.speed *= 5;
+            });
+        });
+
+        /* =========================================
+           PART 3: BACKGROUND ANIMATION
            ========================================= */
         const canvas = document.getElementById('garden');
         const ctx = canvas.getContext('2d');
@@ -289,64 +395,6 @@
             requestAnimationFrame(animate);
         }
         resize(); animate();
-
-        /* =========================================
-           PART 2: INTERACTION LOGIC
-           ========================================= */
-        const yesBtn = document.getElementById('yesBtn');
-        const noBtn = document.getElementById('noBtn');
-        const contentArea = document.getElementById('content-area');
-        const successState = document.getElementById('success-state');
-        
-        // "NO" BUTTON ESCAPE LOGIC
-        let noAttempts = 0;
-        const MAX_ATTEMPTS = 5;
-        
-        function moveNoButton() {
-            if (noAttempts >= MAX_ATTEMPTS) return;
-            
-            const safeMargin = 20;
-            const btnRect = noBtn.getBoundingClientRect();
-            const maxX = window.innerWidth - btnRect.width - safeMargin;
-            const maxY = window.innerHeight - btnRect.height - safeMargin;
-
-            const randomX = Math.max(safeMargin, Math.random() * maxX);
-            const randomY = Math.max(safeMargin, Math.random() * maxY);
-
-            noBtn.style.position = 'fixed';
-            noBtn.style.left = randomX + 'px';
-            noBtn.style.top = randomY + 'px';
-            noBtn.style.zIndex = '100';
-            
-            noAttempts++;
-            if (noAttempts === MAX_ATTEMPTS) {
-                noBtn.style.opacity = '0';
-                noBtn.style.pointerEvents = 'none';
-            }
-        }
-
-        noBtn.addEventListener('mouseover', moveNoButton);
-        noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNoButton(); });
-        noBtn.addEventListener('click', (e) => { e.preventDefault(); moveNoButton(); });
-        noBtn.addEventListener('focus', moveNoButton);
-
-        // "YES" BUTTON LOGIC
-        yesBtn.addEventListener('click', () => {
-            // Hide question UI
-            contentArea.style.display = 'none';
-            
-            // Show success
-            successState.style.display = 'flex';
-            
-            // Party Mode in Background
-            roses.forEach(rose => {
-                rose.color = '#FF6B81';
-                rose.glowColor = '#FF9CA9';
-                rose.speed *= 5;
-                rose.swaySpeed *= 3;
-            });
-        });
-
     </script>
 </body>
 </html>
