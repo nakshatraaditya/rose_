@@ -16,7 +16,6 @@
         :root {
             --bg-color: #000000;
             --card-bg: #F5F1E8;      /* Warm Cream */
-            --bubble-bg: #fffbf2;    /* Lighter Cream for bubble */
             --text-main: #2D2424;    /* Soft Black */
             --text-sub: #635858;     /* Warm Grey */
             --accent-pink: #E85D75;  /* Romantic Pink */
@@ -38,7 +37,7 @@
         }
 
         /* =========================================
-           2. CANVAS BACKGROUND (Z-INDEX 1)
+           2. CANVAS BACKGROUND
            ========================================= */
         canvas#garden {
             position: fixed;
@@ -51,7 +50,7 @@
         }
 
         /* =========================================
-           3. UI FOREGROUND (Z-INDEX 10)
+           3. UI CONTAINER
            ========================================= */
         .ui-overlay {
             position: relative;
@@ -62,7 +61,7 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
-            pointer-events: none; /* Let clicks pass through */
+            pointer-events: none; /* Let clicks pass through outside card */
         }
 
         /* Vignette Overlay */
@@ -81,147 +80,67 @@
         .card {
             background: var(--card-bg);
             width: 100%;
-            max-width: 420px;
+            max-width: 400px; /* Slightly tighter width */
             border-radius: 28px;
-            padding: 0 30px 40px 30px;
+            padding: 20px;
             text-align: center;
             position: relative;
-            pointer-events: auto; /* Re-enable interaction */
+            pointer-events: auto; /* Enable clicks */
             
             box-shadow: 0 30px 70px rgba(0,0,0,0.60), 0 10px 25px rgba(0,0,0,0.25);
             border: 1px solid rgba(255,255,255,0.55);
 
-            /* Load Animation */
+            /* Simple Fade In */
             opacity: 0;
-            transform: translateY(30px);
-            animation: fadeUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.2s;
+            transform: translateY(20px);
+            animation: fadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.3s;
         }
 
         @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
 
         /* =========================================
-           5. HERO VIDEO WRAPPER
+           5. VIDEO PLAYER (RECTANGLE)
            ========================================= */
-        .hero-image-wrapper {
-            width: 150px;
-            height: 150px;
-            margin: -75px auto 20px auto; /* Negative margin pulls it up */
-            position: relative; /* Anchor for speech bubble */
-            border-radius: 50%;
-            
-            background: var(--card-bg);
-            border: 6px solid rgba(255,255,255,0.9);
-            box-shadow: 0 22px 45px rgba(0,0,0,0.30);
-            
-            overflow: visible; /* Allow bubble to pop out */
-            z-index: 20;
+        .video-container {
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 16px;
+            overflow: hidden; /* Rounds the video corners */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: #000;
         }
 
-        /* The Video Player */
         .hero-video {
             width: 100%;
-            height: 100%;
-            object-fit: cover; /* Ensures no black bars, fills circle */
-            border-radius: 50%;
+            height: auto;
+            max-height: 350px; /* Limits height so it fits on screen */
             display: block;
-            background-color: #000; /* Fallback */
+            object-fit: cover; /* Ensures it fills the box nicely */
         }
 
         /* =========================================
-           6. SPEECH BUBBLE
+           6. TYPOGRAPHY & BUTTONS
            ========================================= */
-        .speech-bubble {
-            position: absolute;
-            top: -20px;
-            left: 85%; /* Push to right side of head */
-            width: 160px;
-            background: var(--bubble-bg);
-            border: 2px solid var(--text-main);
-            border-radius: 12px;
-            padding: 12px 16px;
-            text-align: left;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-main);
-            box-shadow: 4px 4px 0px rgba(0,0,0,0.15); /* Retro shadow */
-            
-            /* Hidden initially */
-            opacity: 0;
-            transform: scale(0.8) translateY(10px);
-            pointer-events: none;
-            z-index: 30;
-        }
-
-        /* The little tail triangle */
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            top: 20px;
-            left: -8px; /* Position on left side pointing to head */
-            width: 0; 
-            height: 0; 
-            border-top: 8px solid transparent;
-            border-bottom: 8px solid transparent; 
-            border-right: 8px solid var(--text-main); 
-        }
-        /* Inner tail color to cover border */
-        .speech-bubble::before {
-            content: '';
-            position: absolute;
-            top: 20px;
-            left: -5px;
-            width: 0; 
-            height: 0; 
-            border-top: 8px solid transparent;
-            border-bottom: 8px solid transparent; 
-            border-right: 8px solid var(--bubble-bg); 
-            z-index: 1;
-        }
-
-        /* Animation class added via JS */
-        .bubble-visible {
-            animation: bubblePop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        @keyframes bubblePop {
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        /* =========================================
-           7. BUTTONS & CONTENT
-           ========================================= */
-        #content-area {
-            /* Hidden initially, fades in after bubble */
-            opacity: 0;
-            transition: opacity 0.8s ease;
-        }
-
         h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
+            font-size: 2rem;
             color: var(--text-main);
-            margin: 10px 0 5px 0;
-        }
-
-        p.subtext {
-            font-size: 0.95rem;
-            color: var(--text-sub);
             margin: 0 0 25px 0;
+            line-height: 1.2;
         }
 
         .actions {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 20px;
             position: relative;
             min-height: 60px;
         }
 
         .btn {
             border: none;
-            padding: 12px 30px;
-            font-size: 1rem;
+            padding: 14px 36px;
+            font-size: 1.1rem;
             font-weight: 700;
             border-radius: 50px;
             cursor: pointer;
@@ -246,7 +165,7 @@
         .btn-no {
             background-color: #E0E0E0;
             color: var(--text-sub);
-            transition: all 0.3s ease; /* Smooth escape */
+            transition: all 0.3s ease;
         }
 
         /* Success State */
@@ -255,6 +174,7 @@
             flex-direction: column;
             align-items: center;
             animation: fadeIn 0.5s ease;
+            padding: 20px 0;
         }
         .emoji-confetti { font-size: 3rem; margin-top: 10px; animation: bounce 1s infinite alternate; }
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
@@ -269,18 +189,16 @@
     <div class="ui-overlay">
         <div class="card" id="card">
             
-            <div class="hero-image-wrapper">
-                <video class="hero-video" autoplay loop muted playsinline>
-                    <source src="pixel-character.mp4" type="video/mp4">
-                    <img src="character.png" alt="Character" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+            <div class="video-container">
+                <video class="hero-video" autoplay muted playsinline>
+                    <source src="character.mp4" type="video/mp4">
+                    <img src="character.png" alt="Character" style="width:100%; display:block;">
                 </video>
-
-                <div class="speech-bubble" id="speechBubble">
-                    </div>
             </div>
 
             <div id="content-area">
-                <p class="subtext">No pressure… but I’ll be really happy if you say yes.</p>
+                <h1>Will you be my Valentine?</h1>
+                
                 <div class="actions">
                     <button class="btn btn-yes" id="yesBtn">Yes</button>
                     <button class="btn btn-no" id="noBtn" tabindex="0">No</button>
@@ -288,9 +206,9 @@
             </div>
 
             <div id="success-state" class="success-state">
-                <h1 style="margin-top:0;">Yay!</h1>
+                <h1 style="margin-bottom: 5px;">Yay!</h1>
                 <div class="emoji-confetti">💐 💖 ✨</div>
-                <p style="color:var(--text-sub);">See you on the 14th!</p>
+                <p style="color:var(--text-sub); margin-top: 10px;">See you on the 14th!</p>
             </div>
 
         </div>
@@ -373,40 +291,14 @@
         resize(); animate();
 
         /* =========================================
-           PART 2: TYPING & INTERACTION LOGIC
+           PART 2: INTERACTION LOGIC
            ========================================= */
         const yesBtn = document.getElementById('yesBtn');
         const noBtn = document.getElementById('noBtn');
         const contentArea = document.getElementById('content-area');
         const successState = document.getElementById('success-state');
-        const bubble = document.getElementById('speechBubble');
         
-        // 1. TIMING SEQUENCE
-        window.onload = () => {
-            // Wait for card to pop up (approx 1.2s total delay)
-            setTimeout(() => {
-                showBubble();
-            }, 1200);
-        };
-
-        function showBubble() {
-            bubble.classList.add('bubble-visible');
-            typeWriter("Will you be my Valentine?", 0);
-        }
-
-        function typeWriter(text, i) {
-            if (i < text.length) {
-                bubble.innerHTML += text.charAt(i);
-                setTimeout(() => typeWriter(text, i + 1), 50); // Typing speed
-            } else {
-                // Text finished? Show buttons after small pause
-                setTimeout(() => {
-                    contentArea.style.opacity = '1';
-                }, 500);
-            }
-        }
-
-        // 2. "NO" BUTTON ESCAPE LOGIC
+        // "NO" BUTTON ESCAPE LOGIC
         let noAttempts = 0;
         const MAX_ATTEMPTS = 5;
         
@@ -438,11 +330,10 @@
         noBtn.addEventListener('click', (e) => { e.preventDefault(); moveNoButton(); });
         noBtn.addEventListener('focus', moveNoButton);
 
-        // 3. "YES" BUTTON LOGIC
+        // "YES" BUTTON LOGIC
         yesBtn.addEventListener('click', () => {
             // Hide question UI
             contentArea.style.display = 'none';
-            bubble.style.display = 'none'; // Hide bubble too
             
             // Show success
             successState.style.display = 'flex';
