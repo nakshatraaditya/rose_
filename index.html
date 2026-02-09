@@ -1,107 +1,208 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pixel Rose 🌹</title>
-  <style>
-    :root { --bg: #000; --text: #ff6b93; }
-
-    body{
-      margin:0;
-      height:100vh;
-      display:grid;
-      place-items:center;
-      background: var(--bg);
-      color: var(--text);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    }
-
-    .wrap{ text-align:center; }
-
-    canvas{
-      /* IMPORTANT: keeps it crisp/pixelated */
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      background: #000;
-      border-radius: 14px;
-    }
-
-    .msg{
-      margin-top: 14px;
-      font-size: 18px;
-      letter-spacing: .3px;
-      opacity: .9;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Bit Garden</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000; /* Deep black background */
+            overflow: hidden; /* No scrollbars */
+        }
+        canvas {
+            display: block;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <canvas id="cv" width="512" height="512"></canvas>
-    <div class="msg">For you, in every pixel 🌹</div>
-  </div>
+    <canvas id="garden"></canvas>
 
-  <script>
-    // Put your image in the same folder and name it "rose.png"
-    const IMAGE_SRC = "rose.png";
+    <script>
+        const canvas = document.getElementById('garden');
+        const ctx = canvas.getContext('2d');
 
-    const canvas = document.getElementById("cv");
-    const ctx = canvas.getContext("2d");
+        let width, height;
+        let roses = [];
+        
+        // Configuration for the 8-bit feel
+        const PIXEL_SIZE = 4; // Size of one "pixel"
+        const GRID_ALIGN = true; // Snap to grid for retro feel
 
-    // Controls how "pixelated" it looks:
-    // smaller number = chunkier pixels, larger number = smoother
-    const PIXEL_SCALE = 6; // try 4, 6, 8, 10
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initGarden();
+        }
 
-    const img = new Image();
-    img.src = IMAGE_SRC;
+        window.addEventListener('resize', resize);
 
-    img.onload = () => {
-      const W = canvas.width;
-      const H = canvas.height;
+        // Utility: Random Range
+        function random(min, max) {
+            return Math.random() * (max - min) + min;
+        }
 
-      // Fill black background
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, W, H);
+        class Rose {
+            constructor() {
+                this.init();
+            }
 
-      // Turn off smoothing so scaling stays pixelated
-      ctx.imageSmoothingEnabled = false;
+            init() {
+                // Position (Keep within bounds but random)
+                this.x = random(width * 0.1, width * 0.9);
+                this.y = random(height * 0.2, height * 0.9);
+                
+                // Varied colors (Reds, Pinks, deep Purples)
+                const hue = random(330, 360); 
+                this.color = `hsl(${hue}, 80%, 50%)`;
+                this.glowColor = `hsl(${hue}, 100%, 70%)`;
+                
+                // Animation State
+                this.phase = random(0, Math.PI * 2); // Random start time
+                this.speed = random(0.005, 0.015); // Very slow speed
+                this.scale = random(2, 4); // Size of the flower
+                this.maxBloom = random(0.8, 1.2);
+                
+                // Sway mechanics
+                this.swayOffset = random(0, 100);
+                this.swaySpeed = random(0.001, 0.003);
+            }
 
-      // Draw the image small first, then scale it up (pixelation effect)
-      const smallW = Math.floor(W / PIXEL_SCALE);
-      const smallH = Math.floor(H / PIXEL_SCALE);
+            drawPixel(relX, relY, color, alpha) {
+                ctx.fillStyle = color;
+                ctx.globalAlpha = alpha;
+                
+                // Calculate absolute position
+                let drawX = this.x + (relX * PIXEL_SIZE * this.scale);
+                let drawY = this.y + (relY * PIXEL_SIZE * this.scale);
 
-      // Offscreen canvas for downscaling
-      const off = document.createElement("canvas");
-      off.width = smallW;
-      off.height = smallH;
-      const offCtx = off.getContext("2d");
-      offCtx.imageSmoothingEnabled = true; // smoother downscale into pixels
+                // Sway math
+                const sway = Math.sin(Date.now() * this.swaySpeed + this.swayOffset) * (20 * this.scale);
+                // Apply sway more to the top (y-0) than the bottom
+                // Roses are drawn relative to center, so we adjust based on height
+                drawX += sway;
 
-      // Keep aspect ratio of your rose image
-      const imgAR = img.width / img.height;
-      let drawW = smallW, drawH = smallH;
-      if (drawW / drawH > imgAR) drawW = Math.floor(drawH * imgAR);
-      else drawH = Math.floor(drawW / imgAR);
+                // Snap to grid for 8-bit look
+                if (GRID_ALIGN) {
+                    drawX = Math.floor(drawX / PIXEL_SIZE) * PIXEL_SIZE;
+                    drawY = Math.floor(drawY / PIXEL_SIZE) * PIXEL_SIZE;
+                }
 
-      const dx = Math.floor((smallW - drawW) / 2);
-      const dy = Math.floor((smallH - drawH) / 2);
+                ctx.fillRect(drawX, drawY, PIXEL_SIZE * this.scale, PIXEL_SIZE * this.scale);
+            }
 
-      // Draw onto offscreen (small) canvas
-      offCtx.clearRect(0, 0, smallW, smallH);
-      offCtx.drawImage(img, dx, dy, drawW, drawH);
+            update(time) {
+                // Cycle: 0 -> 1 (Bloom) -> Sway -> 1 -> 0 (Fade)
+                // We use a sine wave mapped to 0-1 range for the life cycle
+                // Adding a slow time component
+                
+                const t = time * this.speed + this.phase;
+                // cycle is 0 to 1
+                const cycle = (Math.sin(t) + 1) / 2; 
+                
+                // Apply logic stages
+                // Bloom: 0.0 to 0.7
+                // Pulse/Glow: 0.7 to 1.0
+                
+                const bloomLevel = Math.min(cycle * 1.5, 1) * this.maxBloom; 
+                
+                // Pulse opacity slightly at full bloom
+                let alpha = 1;
+                let glow = 0;
+                
+                if (cycle > 0.8) {
+                    // Pulsing Glow Phase
+                    glow = (cycle - 0.8) * 100; // 0 to 20 range
+                    alpha = 0.8 + Math.sin(time * 0.1) * 0.2;
+                } else if (cycle < 0.2) {
+                    // Fading out/in
+                    alpha = cycle * 5; 
+                }
 
-      // Draw scaled-up onto main canvas (pixelated)
-      ctx.drawImage(off, 0, 0, smallW, smallH, 0, 0, W, H);
-    };
+                this.draw(bloomLevel, alpha, glow);
+            }
 
-    img.onerror = () => {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#ff6b93";
-      ctx.font = "16px monospace";
-      ctx.fillText("Couldn't load rose.png", 20, 40);
-      ctx.fillText("Put the image in the same folder as this HTML.", 20, 65);
-    };
-  </script>
+            draw(bloom, alpha, glowLevel) {
+                // Pixel Map for a Rose
+                // We draw procedural layers based on "bloom" progress
+                
+                // STEM (Green)
+                // Only draw stem if partially bloomed
+                if (bloom > 0.1) {
+                    const stemHeight = 6;
+                    for (let i = 1; i < stemHeight; i++) {
+                        this.drawPixel(0, i + 2, '#2d6e32', alpha); 
+                        // Leaves
+                        if (i === 3) {
+                             this.drawPixel(-1, i + 2, '#2d6e32', alpha);
+                             this.drawPixel(1, i + 3, '#2d6e32', alpha);
+                        }
+                    }
+                }
+
+                // PETALS
+                // Center
+                if (bloom > 0.2) this.drawPixel(0, 0, '#601120', alpha);
+                if (bloom > 0.3) this.drawPixel(0, 1, '#601120', alpha);
+
+                // Inner Ring
+                if (bloom > 0.5) {
+                    this.drawPixel(-1, 0, this.color, alpha);
+                    this.drawPixel(1, 0, this.color, alpha);
+                    this.drawPixel(0, -1, this.color, alpha);
+                }
+
+                // Outer Ring (Full Bloom)
+                if (bloom > 0.8) {
+                    this.drawPixel(-1, -1, this.color, alpha);
+                    this.drawPixel(1, -1, this.color, alpha);
+                    this.drawPixel(-1, 1, this.color, alpha);
+                    this.drawPixel(1, 1, this.color, alpha);
+                    this.drawPixel(-2, 0, this.color, alpha);
+                    this.drawPixel(2, 0, this.color, alpha);
+                }
+
+                // Glow Effect (Canvas Shadow)
+                if (glowLevel > 0) {
+                    ctx.shadowBlur = glowLevel;
+                    ctx.shadowColor = this.glowColor;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+
+        function initGarden() {
+            roses = [];
+            // Create density based on screen size
+            const count = Math.floor((width * height) / 40000);
+            for (let i = 0; i < count; i++) {
+                roses.push(new Rose());
+            }
+        }
+
+        function animate() {
+            // Clear screen with slight trail effect (optional, strictly black here for crispness)
+            ctx.fillStyle = '#000';
+            ctx.shadowBlur = 0; // Reset shadow for background clear
+            ctx.fillRect(0, 0, width, height);
+
+            const time = Date.now() * 0.001;
+
+            roses.forEach(rose => {
+                rose.update(time);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start
+        resize();
+        animate();
+
+    </script>
 </body>
 </html>
