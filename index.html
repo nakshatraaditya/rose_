@@ -154,18 +154,112 @@
       pointer-events:none;
     }
 
-    .hero-image {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
+    /* Video hero (replaces static image) */
+    .hero-video {
+      width: 104px;
+      height: 104px;
+      object-fit: contain; /* avoid cropping important parts */
+      border-radius: 18px;
       user-select: none;
       -webkit-user-drag: none;
+
+      /* Best-effort "crisp pixel" handling (varies by browser) */
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      transform: translateZ(0);
+      backface-visibility: hidden;
     }
 
     /* =========================================
-       5. TYPOGRAPHY
+       4B. PIXEL DIALOGUE BUBBLE (NEAR HEAD)
+       ========================================= */
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(6px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .dialogue {
+      position: absolute;
+      z-index: 3;
+
+      /* anchor next to the hero "head" */
+      top: 34px;
+      left: 50%;
+      transform: translateX(calc(-50% + clamp(86px, 20vw, 122px)));
+
+      width: min(280px, calc(100vw - 70px));
+      pointer-events: auto;
+
+      opacity: 0;
+      animation: bubbleIn 420ms ease forwards;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.25));
+    }
+
+    /* bubble body with subtle pixel-step corners */
+    .dialogue .bubble {
+      background: rgba(245,241,232,0.98);
+      border: 2px solid rgba(45,36,36,0.14);
+      padding: 14px 14px 12px 14px;
+
+      /* stepped/pixel-ish corners */
+      clip-path: polygon(
+        10px 0%, calc(100% - 10px) 0%,
+        100% 10px, 100% calc(100% - 14px),
+        calc(100% - 10px) 100%, 14px 100%,
+        0% calc(100% - 10px), 0% 10px
+      );
+
+      box-shadow:
+        0 18px 35px rgba(0,0,0,0.22),
+        0 8px 18px rgba(0,0,0,0.14);
+    }
+
+    /* tail pointing toward character head */
+    .dialogue .tail {
+      position: absolute;
+      left: 18px;
+      bottom: -10px;
+      width: 22px;
+      height: 22px;
+      background: rgba(245,241,232,0.98);
+      border-left: 2px solid rgba(45,36,36,0.14);
+      border-bottom: 2px solid rgba(45,36,36,0.14);
+      transform: rotate(45deg);
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .bubble-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      color: var(--text-main);
+      line-height: 1.15;
+      letter-spacing: -0.3px;
+      margin: 0;
+      text-align: left;
+      min-height: 2.2em; /* keeps layout stable during typing */
+      position: relative;
+    }
+
+    .bubble-caret {
+      display: inline-block;
+      width: 10px;
+      margin-left: 2px;
+      transform: translateY(-1px);
+      opacity: 0.75;
+      animation: caretBlink 0.8s infinite steps(1);
+    }
+    @keyframes caretBlink { 50% { opacity: 0; } }
+
+    .bubble-actions {
+      display: none; /* shown after typing finishes */
+      margin-top: 12px;
+      justify-content: flex-start;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* =========================================
+       5. TYPOGRAPHY (kept for success state)
        ========================================= */
     h1 {
       font-family: 'Playfair Display', serif;
@@ -188,7 +282,7 @@
     }
 
     /* =========================================
-       6. BUTTONS
+       6. BUTTONS (unchanged)
        ========================================= */
     .actions {
       display: flex;
@@ -235,7 +329,7 @@
     }
 
     /* =========================================
-       7. SUCCESS STATE
+       7. SUCCESS STATE (unchanged)
        ========================================= */
     .success-state {
       display: none;
@@ -244,6 +338,7 @@
       animation: fadeIn 0.5s ease;
       position: relative;
       z-index: 2;
+      margin-top: 8px;
     }
 
     .success-state h2 {
@@ -268,10 +363,29 @@
     @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
+    /* small optional micro celebration near character (subtle) */
+    .micro-celebration {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      opacity: 0;
+    }
+    .micro-celebration.show {
+      opacity: 1;
+      animation: microPop 520ms ease forwards;
+    }
+    @keyframes microPop {
+      0%   { transform: translateY(0) scale(0.95); opacity: 0; }
+      35%  { transform: translateY(-6px) scale(1.02); opacity: 1; }
+      100% { transform: translateY(-10px) scale(1); opacity: 0; }
+    }
+
     /* Optional: respect reduced motion */
     @media (prefers-reduced-motion: reduce) {
-      .card, .hero-image-wrapper, .emoji-confetti { animation: none !important; }
+      .card, .hero-image-wrapper, .emoji-confetti, .dialogue { animation: none !important; }
       .btn, .btn-no { transition: none !important; }
+      .bubble-caret { animation: none !important; }
     }
   </style>
 </head>
@@ -283,18 +397,39 @@
     <div class="card" id="card">
 
       <div class="hero-image-wrapper" id="heroWrap">
-        <!-- Change this to your actual pixel character file -->
-        <img src="character.png" alt="Pixel Art Character" class="hero-image">
+        <!-- Replace src with your deployed video path/filename -->
+        <video
+          class="hero-video"
+          id="heroVideo"
+          src="Pixel_Art_Character_Animation_Request.mp4"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="auto"
+        ></video>
+
+        <div class="micro-celebration" id="microCelebration">✨</div>
       </div>
 
-      <div id="question-state">
-        <h1>Will you be my Valentine?</h1>
-        <p class="subtext">No pressure… but I’ll be really happy if you say yes.</p>
+      <!-- Pixel dialogue bubble near the character head -->
+      <div class="dialogue" id="dialogue">
+        <div class="bubble">
+          <p class="bubble-text">
+            <span id="bubbleText"></span><span class="bubble-caret" id="bubbleCaret">▌</span>
+          </p>
 
-        <div class="actions">
-          <button class="btn btn-yes" id="yesBtn">Yes</button>
-          <button class="btn btn-no" id="noBtn" tabindex="0">No</button>
+          <div class="bubble-actions" id="bubbleActions">
+            <!-- Buttons keep the same IDs and behavior -->
+            <button class="btn btn-yes" id="yesBtn">Yes</button>
+            <button class="btn btn-no" id="noBtn" tabindex="0">No</button>
+          </div>
         </div>
+        <div class="tail" aria-hidden="true"></div>
+      </div>
+
+      <div id="question-state" style="display:block;">
+        <!-- content moved to bubble (keeping state wrapper for existing logic) -->
       </div>
 
       <div id="success-state" class="success-state">
@@ -321,6 +456,7 @@
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
       initGarden();
+      positionDialogue(); // keep bubble near head on resize
     }
     window.addEventListener('resize', resize);
 
@@ -435,18 +571,60 @@
       requestAnimationFrame(animate);
     }
 
-    resize();
-    animate();
+    /* =========================================
+       PART B: DIALOGUE (TYPING + TIMING)
+       ========================================= */
+    const dialogue = document.getElementById('dialogue');
+    const bubbleTextEl = document.getElementById('bubbleText');
+    const bubbleCaret = document.getElementById('bubbleCaret');
+    const bubbleActions = document.getElementById('bubbleActions');
+    const heroWrap = document.getElementById('heroWrap');
+
+    function positionDialogue() {
+      // Keep bubble near the hero head even as layout shifts
+      // (We anchor relative to the card/hero; fine-tune tail direction if needed.)
+      const heroRect = heroWrap.getBoundingClientRect();
+      const cardRect = document.getElementById('card').getBoundingClientRect();
+
+      // Place bubble slightly to the right and a bit above hero center
+      const targetX = heroRect.left + heroRect.width * 0.62;
+      const targetY = heroRect.top + heroRect.height * 0.18;
+
+      // Convert viewport coords to card-local absolute positioning
+      const xInCard = targetX - cardRect.left;
+      const yInCard = targetY - cardRect.top;
+
+      dialogue.style.left = xInCard + "px";
+      dialogue.style.top = yInCard + "px";
+      dialogue.style.transform = "translateX(clamp(54px, 16vw, 118px))";
+    }
+
+    function typeText(text, speed = 34) {
+      bubbleTextEl.textContent = "";
+      bubbleActions.style.display = "none";
+      bubbleCaret.style.display = "inline-block";
+
+      let i = 0;
+      const t = setInterval(() => {
+        bubbleTextEl.textContent += text[i];
+        i++;
+        if (i >= text.length) {
+          clearInterval(t);
+          bubbleCaret.style.display = "none";
+          bubbleActions.style.display = "flex";
+        }
+      }, speed);
+    }
 
     /* =========================================
-       PART B: INTERACTION LOGIC
+       PART C: INTERACTION LOGIC (UNCHANGED)
        ========================================= */
     const yesBtn = document.getElementById('yesBtn');
     const noBtn = document.getElementById('noBtn');
     const questionState = document.getElementById('question-state');
     const successState = document.getElementById('success-state');
     const card = document.getElementById('card');
-    const heroWrap = document.getElementById('heroWrap');
+    const microCelebration = document.getElementById('microCelebration');
 
     let noAttempts = 0;
     const MAX_ATTEMPTS = 5;
@@ -503,11 +681,12 @@
     noBtn.addEventListener('focus', moveNoButton);
 
     yesBtn.addEventListener('click', () => {
-      // UI Transition
+      // UI Transition (same behaviour)
       questionState.style.display = 'none';
+      dialogue.style.display = 'none';
       successState.style.display = 'flex';
 
-      // Pop the character badge a bit
+      // Pop the character badge a bit (same behaviour)
       heroWrap.animate(
         [
           { transform: 'translateY(0) rotate(-1deg) scale(1)' },
@@ -517,7 +696,12 @@
         { duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' }
       );
 
-      // Garden Party Mode
+      // Optional subtle micro-celebration near character (small)
+      microCelebration.classList.remove("show");
+      void microCelebration.offsetWidth;
+      microCelebration.classList.add("show");
+
+      // Garden Party Mode (same behaviour)
       roses.forEach(rose => {
         rose.color = '#FF6B81';
         rose.glowColor = '#FF9CA9';
@@ -525,6 +709,19 @@
         rose.swaySpeed *= 3;
       });
     });
+
+    /* =========================================
+       PART D: INIT
+       ========================================= */
+    resize();
+    animate();
+
+    // ensure dialogue tracks head position
+    requestAnimationFrame(positionDialogue);
+    setTimeout(positionDialogue, 250);
+
+    // On page load: video visible and playing, bubble types in question, then buttons appear
+    typeText("Will you be my Valentine?");
   </script>
 </body>
 </html>
